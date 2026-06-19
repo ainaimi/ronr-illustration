@@ -1,0 +1,194 @@
+\documentclass[12pt]{article}
+
+% math
+\usepackage{amsmath,amssymb}
+\usepackage{eqnarray} % (deprecated, but retained in case you use it)
+\usepackage{cancel}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\usepackage{bm}
+\usepackage{syllogism}
+
+% font
+%\usepackage{fourier}
+\usepackage[T1]{fontenc}
+\usepackage{mathpazo,mathabx}
+\usepackage[dvipsnames]{xcolor}
+
+% headings
+\usepackage{sectsty}
+\sectionfont{\fontsize{12}{15}\selectfont}
+\subsectionfont{\normalfont\fontsize{12}{15}\selectfont}
+\subsubsectionfont{\itshape\normalfont\fontsize{12}{15}\selectfont}
+
+% line numbers
+\usepackage{lineno}
+
+% footnotes
+\usepackage[symbol]{footmisc}
+
+% expectation operator
+\usepackage{relsize}
+\newcommand{\E}{\mathop{\vcenter{\hbox{\relsize{+1}$E$}}}}
+
+% logit / expit operators
+\DeclareMathOperator{\logit}{logit}
+\DeclareMathOperator{\expit}{expit}
+
+\newcommand{\Pn}{\mathbb{P}_n}
+
+% accents (double hat)
+\usepackage{accents}
+\newlength{\dhatheight}
+\newcommand{\doublehat}[1]{%
+    \settoheight{\dhatheight}{\ensuremath{\hat{#1}}}%
+    \addtolength{\dhatheight}{-0.15ex}%
+    \hat{\vphantom{\rule{1pt}{\dhatheight}}%
+    \smash{\hat{#1}}}}
+
+% independence symbol
+\newcommand{\bigCI}{\mathrel{\text{\scalebox{1.07}{$\perp\mkern-10mu\perp$}}}}
+
+% lineno patch for amsmath envs
+\newcommand*\patchAmsMathEnvironmentForLineno[1]{%
+	\expandafter\let\csname old#1\expandafter\endcsname\csname #1\endcsname
+	\expandafter\let\csname oldend#1\expandafter\endcsname\csname end#1\endcsname
+	\renewenvironment{#1}%
+	{\linenomath\csname old#1\endcsname}%
+	{\csname oldend#1\endcsname\endlinenomath}%
+}
+\newcommand*\patchBothAmsMathEnvironmentsForLineno[1]{%
+	\patchAmsMathEnvironmentForLineno{#1}%
+	\patchAmsMathEnvironmentForLineno{#1*}%
+}
+\AtBeginDocument{%
+	\patchBothAmsMathEnvironmentsForLineno{equation}%
+	\patchBothAmsMathEnvironmentsForLineno{align}%
+	\patchBothAmsMathEnvironmentsForLineno{flalign}%
+	\patchBothAmsMathEnvironmentsForLineno{alignat}%
+	\patchBothAmsMathEnvironmentsForLineno{gather}%
+	\patchBothAmsMathEnvironmentsForLineno{multline}%
+}
+
+% misc
+\usepackage{color}
+\usepackage{wrapfig}
+\usepackage{indentfirst}
+\usepackage{setspace}
+\usepackage[numbers,super,sort&compress]{natbib}
+\usepackage{booktabs}
+\usepackage{rotating}
+\usepackage[margin = .85in]{geometry}
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{}
+%\renewcommand{\headrulewidth}{0pt}
+\rfoot{\thepage}
+\pagenumbering{arabic}
+\usepackage{tabularx}
+\usepackage{pdfpages}
+\usepackage{longtable}
+\usepackage{multirow}
+\usepackage{multicol}
+\usepackage{float}
+\usepackage{lscape}
+\usepackage{graphicx}
+\usepackage{mdwlist}
+\usepackage{url}
+\urlstyle{same}
+\usepackage{comment}
+\usepackage{amsthm}
+
+% figures and captions
+\usepackage{caption}
+\usepackage{subcaption}
+
+% titlesec
+\usepackage[compact]{titlesec}
+
+% remove square brackets in bib
+\makeatletter
+\renewcommand\@biblabel[1]{#1.}
+\makeatother
+
+\newtheorem*{remark}{Remark} % Unnumbered
+
+% hyperlinks LAST (after most packages and natbib)
+\usepackage[colorlinks=true, urlcolor=blue, linkcolor=black, citecolor=black]{hyperref}
+
+% path to images
+\graphicspath{{../figures/}}
+
+\rhead{\color{red} Technical note}
+
+\begin{document}
+\doublespacing
+
+\section{Preface}
+
+This note accompanies our main manuscript on residual-on-residual regression as a tool for analyzing observational data.\cite{Robinson1988} In the main text, we state -- without formal proof -- that Robinson's principal contribution was to show that the nuisance functions in a partially linear model can be estimated nonparametrically (for example, with flexible machine learning) while still yielding a residual-on-residual estimator of the exposure-effect parameter $\psi$ that retains optimal statistical properties: $\sqrt{n}$-consistency, asymptotic normality, and the semiparametric efficiency bound. The purpose of this note is to provide a short, self-contained sketch of the argument that supports this claim, using the modern double / debiased machine learning framework of Chernozhukov et al.\cite{Chernozhukov2018} The sketch is intended for readers who would like to understand \emph{why} the method works at the level of an outline; it is not a complete proof, and we direct readers to the cited references for the regularity conditions and technical details we omit.
+
+\section{Setting}
+
+Throughout, we use $O = (Y, A, C)$ to denote the observed data, where $Y \in \mathbb{R}$ is a continuous outcome, $A \in \{0, 1\}$ is a binary exposure, and $C \in \mathbb{R}^d$ is a vector of measured confounders. We assume $O_1, \ldots, O_n$ are independent and identically distributed draws from an unknown distribution $P$. The partially linear model considered in the main text is
+\begin{equation}
+Y = \psi A + g(C) + \varepsilon, \qquad E[\varepsilon \mid A, C] = 0, \label{eqn:plm}
+\end{equation}
+where $\psi \in \mathbb{R}$ is the parameter of interest and $g: \mathbb{R}^d \to \mathbb{R}$ is an unknown nuisance function. Following Robinson,\cite{Robinson1988} we introduce two further nuisance functions:
+$$\mu(C) = E[Y \mid C], \qquad \pi(C) = E[A \mid C].$$
+Subtracting $E[Y \mid C]$ from both sides of equation \ref{eqn:plm} and using $E[\varepsilon \mid C] = 0$ gives
+\begin{equation}
+Y - \mu(C) = \psi \big( A - \pi(C) \big) + \varepsilon, \label{eqn:ronr}
+\end{equation}
+which is the residual-on-residual representation. The associated efficient influence function for $\psi$ is the Neyman-orthogonal score
+\begin{equation}
+\phi(O; \mu, \pi, \psi) = \big[A - \pi(C)\big] \, \big[ Y - \mu(C) - \psi \, (A - \pi(C)) \big], \label{eqn:score}
+\end{equation}
+and the corresponding estimator solves the empirical analog of $\E[\phi(O; \mu, \pi, \psi)] = 0$ using machine-learning-based estimates $\hat{\mu}$ and $\hat{\pi}$ in place of $\mu$ and $\pi$. In what follows we use $\Pn[f(O)] = n^{-1} \sum_{i=1}^n f(O_i)$ for the empirical mean and $P[f(O)] = E[f(O)]$ for the population mean.
+
+\section{Proof Sketch}
+
+We sketch the argument in three steps. First, we write down a von Mises expansion for $\hat{\psi} - \psi$. Second, we show that the leading bias term collapses to a product of nuisance errors --- the Neyman-orthogonality property of the score in \ref{eqn:score}. Third, we combine this with Cauchy--Schwarz and cross-fitting to obtain a $\sqrt{n}$-consistent and asymptotically normal estimator that attains the semiparametric efficiency bound.
+
+\subsection{Step 1: von Mises Expansion}
+
+By the standard von Mises expansion for asymptotically linear estimators based on a pathwise differentiable target parameter,\cite{Chernozhukov2018, Kennedy2024}
+\begin{equation}
+\hat{\psi} - \psi \;=\; \underbrace{\Pn \phi(O; \mu, \pi, \psi)}_{\text{(I)\ empirical process at the truth}} \;+\; \underbrace{P\{\phi(O; \hat{\mu}, \hat{\pi}, \psi) - \phi(O; \mu, \pi, \psi)\}}_{\text{(II)\ regularization bias}} \;+\; \underbrace{R_n}_{\text{(III)\ remainder}}, \label{eqn:vm}
+\end{equation}
+where the constant of proportionality (the denominator $E[(A - \pi(C))^2]$ arising from the no-intercept OLS step) has been absorbed into the leading term for clarity. Term (I) satisfies a central limit theorem: $\sqrt{n} \cdot \Pn \phi(O; \mu, \pi, \psi) \Rightarrow \mathcal{N}(0, V)$, where $V = E[\phi(O; \mu, \pi, \psi)^2]$ achieves the semiparametric efficiency bound for $\psi$ in the partially linear model.\cite{Robinson1988, Chernozhukov2018} The remaining question is how to control terms (II) and (III).
+
+\subsection{Step 2: Neyman Orthogonality and the Product-of-Rates Bound}
+
+Substituting the explicit form of $\phi$ from equation \ref{eqn:score} into term (II) and expanding gives, after algebraic simplification using $E[A - \pi(C) \mid C] = 0$ and $E[Y - \mu(C) \mid C] = 0$,
+\begin{equation}
+P\big\{\phi(O; \hat{\mu}, \hat{\pi}, \psi) - \phi(O; \mu, \pi, \psi)\big\} \;=\; E\Big[\big(\hat{\mu}(C) - \mu(C)\big)\,\big(\hat{\pi}(C) - \pi(C)\big)\Big]. \label{eqn:orthog}
+\end{equation}
+This is the Neyman-orthogonality property of the score in equation \ref{eqn:score}: the leading bias is first-order insensitive to errors in either nuisance function on its own, and only the \emph{product} of the two errors enters the bias term. By the Cauchy--Schwarz inequality,
+\begin{equation}
+\big|E\big[(\hat{\mu} - \mu)(\hat{\pi} - \pi)\big]\big| \;\leq\; \|\hat{\mu} - \mu\|_2 \cdot \|\hat{\pi} - \pi\|_2, \label{eqn:cs}
+\end{equation}
+where $\|f\|_2 = \{E[f(C)^2]\}^{1/2}$. Consequently, if each nuisance estimator attains the relatively slow $\mathcal{L}_2$ rate
+$$\|\hat{\mu} - \mu\|_2 = o_P(n^{-1/4}), \qquad \|\hat{\pi} - \pi\|_2 = o_P(n^{-1/4}),$$
+then the product on the right-hand side of \ref{eqn:cs} is $o_P(n^{-1/2})$. This means term (II) is asymptotically negligible relative to the parametric-rate term (I). Many modern machine learning estimators (the lasso under sparsity, random forests with honest splitting, neural networks with appropriate regularization, and stacking algorithms such as the super learner) satisfy the $o_P(n^{-1/4})$ rate under realistic smoothness or sparsity assumptions.\cite{Chernozhukov2018, Kennedy2024}
+
+\subsection{Step 3: Cross-Fitting and the Remainder Term}
+
+Term (III) in equation \ref{eqn:vm} is an empirical process that captures the overfitting bias incurred from using the same observations to (a) train the nuisance estimators $\hat{\mu}$ and $\hat{\pi}$ and (b) evaluate the score. Classical proofs control this term by assuming $\hat{\mu}$ and $\hat{\pi}$ lie in a Donsker class of functions, but this assumption is restrictive and typically fails for the flexible machine learning algorithms one would actually want to deploy.\cite{Kennedy2024} The modern solution is \emph{cross-fitting}: partition the sample into $K$ folds, fit the nuisance functions on the union of $K - 1$ folds, and evaluate the score on the held-out fold. Averaging across the rotation of folds yields an estimator for which $R_n = o_P(n^{-1/2})$ without any Donsker assumption.\cite{Chernozhukov2018, Zivich2022}
+
+\subsection{Putting the Steps Together}
+
+Combining steps 1--3, equation \ref{eqn:vm} becomes
+$$\sqrt{n}(\hat{\psi} - \psi) \;=\; \sqrt{n} \, \Pn \phi(O; \mu, \pi, \psi) \;+\; o_P(1) \;\Rightarrow\; \mathcal{N}(0, V),$$
+which gives $\sqrt{n}$-consistency, asymptotic normality, and (because $V$ is the semiparametric efficiency bound) efficiency. In short, the product-of-rates structure in equation \ref{eqn:orthog} is what allows ``slow'' machine learning fits for $\hat{\mu}(C)$ and $\hat{\pi}(C)$ to be combined into a ``fast'' parametric-rate estimator of $\psi$. Cross-fitting then removes the only remaining obstacle --- empirical-process overfitting --- without restricting the function classes used by the learners.
+
+\section{Remark on Robust Variance Estimation}
+
+The argument above guarantees that $\sqrt{n}(\hat{\psi} - \psi)$ is asymptotically $\mathcal{N}(0, V)$ with $V = E[\phi(O; \mu, \pi, \psi)^2]$. In our applied implementation and simulation study, we estimate $V$ via the HC3 sandwich variance of the no-intercept OLS regression of outcome residuals on exposure residuals. Under the same conditions used above, HC3 is consistent for $V$, and the resulting Wald confidence intervals attain nominal coverage asymptotically. We refer the reader to Chernozhukov et al.\cite{Chernozhukov2018} for the formal regularity conditions.
+
+\newpage
+
+\bibliographystyle{epid}
+\bibliography{main_references}
+
+\end{document}

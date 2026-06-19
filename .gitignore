@@ -1,0 +1,28 @@
+# OS / editor cruft
+.DS_Store
+.Rproj.user/
+.Rhistory
+.RData
+.Ruserdata
+
+# Project-internal scratch and reading material
+_corpus/
+_notes/
+sandbox/
+
+# Sensitive application data (nuMoM2b-HHS) -- must not be pushed
+data/numom+hhs_diet_unimputed_v2.dta
+
+# Large raw simulation outputs (regenerable from code/simulation_study*.R)
+output/sim_results.csv
+output/sim_results_sl.csv
+
+# Stray run logs
+rp.out
+
+# Old Word draft snapshots of the manuscript (kept locally for history,
+# not for the public replication archive)
+manuscript/2026_02_03_ResidualOnResidual.docx
+manuscript/2026_02_03_ResidualOnResidual_QJ.docx
+manuscript/2026_02_03_ResidualOnResidual_QJ_bw.docx
+manuscript/2026_05_26_ResidualOnResidual.docx
