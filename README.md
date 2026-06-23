@@ -1,8 +1,7 @@
 # Residual-on-Residual Regression as a Tool for Analyzing Observational Data
 
 Replication code for the manuscript *Residual-on-Residual Regression as a Tool
-for Analyzing Observational Data* (Naimi, Jin, Yu, Parisi, Bodnar), targeted to
-*American Journal of Epidemiology* (Practice of Epidemiology).
+for Analyzing Observational Data* (Naimi, Jin, Yu, Parisi, Bodnar).
 
 The paper compares residual-on-residual (RonR) regression to AIPW and TMLE for
 estimating a confounder-adjusted average treatment effect, using a simulation
@@ -14,14 +13,13 @@ periconceptional vegetable intake and preeclampsia.
 
 ```
 code/
-  simulation_study.R       Oracle parametric-nuisance simulation (sanity check
-                           that the AIPW/TMLE/RonR implementations are correct).
-  simulation_study_sl.R    Main simulation study (Super Learner nuisances,
-                           4-member GLM library). Produces sim_results_sl.csv
-                           and the figure used in the manuscript.
-  residual_on_residual.R   Application analysis on the nuMoM2b-HHS data.
-  seed_gen.R               Generates the reproducible seed bank.
-  create_figure.py         Auxiliary plotting helper.
+  simulation_study.R               Oracle parametric-nuisance simulation (sanity check
+                                   that the AIPW/TMLE/RonR implementations are correct).
+  simulation_study_sl.R            Main simulation study (Super Learner nuisances,
+                                   4-member GLM library). Produces sim_results_sl.csv
+                                   and the figure used in the manuscript.
+  numom2b_residual_on_residual.R   Application analysis on the nuMoM2b-HHS data.
+  seed_gen.R                       Generates the reproducible seed bank.
 
 data/
   random_seed_values.csv   Reproducible Monte Carlo seed bank used by the
@@ -86,7 +84,7 @@ redistributed in this repository. Access to the underlying study data is
 governed by the nuMoM2b-HHS Data and Specimen Distribution Subcommittee; see
 the study consortium website for application procedures.
 
-`code/residual_on_residual.R` is provided so that the analytic pipeline applied
+`code/numom2b_residual_on_residual.R` is provided so that the analytic pipeline applied
 to the application data can be inspected and replicated by authorised users
 who have obtained the underlying data through the proper channels.
 

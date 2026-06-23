@@ -151,7 +151,7 @@ nu_hat <- fit_nu$SL.predict
 uY     <- processed_dat$pree_acog - nu_hat
 
 # ── Super Learner: outcome model for AIPW & TMLE ──────────────────────────────
-covariates_aug <- cbind(covs, processed_dat$v_dich)
+covariates_aug <- cbind(covs, v_dich = processed_dat$v_dich)
 fit_mu <- CV.SuperLearner(
   Y          = processed_dat$pree_acog,
   X          = covariates_aug,
@@ -164,23 +164,23 @@ fit_mu <- CV.SuperLearner(
   verbose    = FALSE
 )
 
-mu_hat <- NULL
+# Natural-A predictions: $SL.predict is cross-fitted and already in original
+# observation order — no loop needed.
+mu_hat <- as.numeric(fit_mu$SL.predict)
+
+# Counterfactual predictions: pre-allocate and assign POSITIONALLY by fold so
+# predictions stay aligned to each individual's row (rbind would reorder to
+# fold order and silently mis-pair mu with A/Y/pi downstream).
+mu_hat1 <- numeric(n)
+mu_hat0 <- numeric(n)
 for (i in 1:num.folds) {
-  mu_hat <- rbind(mu_hat, predict(fit_mu$AllSL[[i]],
-                                    newdata = covariates_aug[fold_index[[i]]], 
-                                  onlySL = T)$pred)
-}
-mu_hat1 <- NULL
-for (i in 1:num.folds) {
-  mu_hat1 <- rbind(mu_hat1, predict(fit_mu$AllSL[[i]],
-                                    newdata = base::transform(covariates_aug[fold_index[[i]],
-                                    ], v_dich = 1), onlySL = T)$pred)
-}
-mu_hat0 <- NULL
-for (i in 1:num.folds) {
-  mu_hat0 <- rbind(mu_hat0, predict(fit_mu$AllSL[[i]],
-                                    newdata = base::transform(covariates_aug[fold_index[[i]],
-                                    ], v_dich = 0), onlySL = T)$pred)
+  idx <- fold_index[[i]]
+  mu_hat1[idx] <- predict(fit_mu$AllSL[[i]],
+                          newdata = base::transform(covariates_aug[idx, ], v_dich = 1),
+                          onlySL = TRUE)$pred
+  mu_hat0[idx] <- predict(fit_mu$AllSL[[i]],
+                          newdata = base::transform(covariates_aug[idx, ], v_dich = 0),
+                          onlySL = TRUE)$pred
 }
 
 # ── Super Learner: exposure model ─────────────────────────────────────────────
@@ -202,6 +202,8 @@ coef(fit_pi)
 
 pi <- fit_pi$SL.predict
 uA <- processed_dat$v_dich - pi
+
+summarize(pi)
 
 # ── Propensity score overlap plot ─────────────────────────────────────────────
 
