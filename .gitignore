@@ -22,7 +22,9 @@ rp.out
 
 # Old Word draft snapshots of the manuscript (kept locally for history,
 # not for the public replication archive)
+manuscript/*
 manuscript/2026_02_03_ResidualOnResidual.docx
 manuscript/2026_02_03_ResidualOnResidual_QJ.docx
 manuscript/2026_02_03_ResidualOnResidual_QJ_bw.docx
 manuscript/2026_05_26_ResidualOnResidual.docx
+*.pdf
