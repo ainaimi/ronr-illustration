@@ -90,5 +90,4 @@ who have obtained the underlying data through the proper channels.
 
 ## Citation
 
-If you use this code, please cite the accompanying manuscript (citation will
-be added on acceptance).
+Forthcoming.

@@ -203,8 +203,6 @@ coef(fit_pi)
 pi <- fit_pi$SL.predict
 uA <- processed_dat$v_dich - pi
 
-summarize(pi)
-
 # ── Propensity score overlap plot ─────────────────────────────────────────────
 
 ps_dat <- data.frame(
