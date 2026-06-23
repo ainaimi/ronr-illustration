@@ -29,3 +29,8 @@ manuscript/2026_02_03_ResidualOnResidual_QJ.docx
 manuscript/2026_02_03_ResidualOnResidual_QJ_bw.docx
 manuscript/2026_05_26_ResidualOnResidual.docx
 *.pdf
+
+# Excluded from the public archive (kept locally)
+code/create_figure.py
+code/r_on_r_numom2b.html
+figures/Figure1_RoR_CrossValidation.pptx
