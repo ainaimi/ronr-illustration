@@ -18,6 +18,14 @@ code/
   simulation_study_sl.R            Main simulation study (Super Learner nuisances,
                                    4-member GLM library). Produces sim_results_sl.csv
                                    and the figure used in the manuscript.
+  simulation_study_sl_positivity.R
+                                   Positivity stress test: reuses the Super Learner
+                                   nuisance setup of simulation_study_sl.R but holds
+                                   the effect homogeneous and sweeps a single overlap-
+                                   severity dial, so AIPW/TMLE/RonR all target the same
+                                   ATE while overlap degrades. Produces
+                                   sim_results_sl_positivity.csv plus the
+                                   positivity-sweep summaries and figures.
   numom2b_residual_on_residual.R   Application analysis on the nuMoM2b-HHS data.
   seed_gen.R                       Generates the reproducible seed bank.
 
@@ -32,8 +40,26 @@ output/
   sim_summary_weights_sl.{csv,rds} Per-scenario mean Super Learner ensemble
                                    weights for the propensity, conditional
                                    outcome, and marginal outcome nuisance fits.
+  sim_summary_sl_positivity.{csv,rds}
+                                   Positivity stress-test performance summaries, one
+                                   row per (overlap severity, method), including the
+                                   per-severity TMLE failure count.
+  sim_summary_weights_sl_positivity.{csv,rds}
+                                   Mean Super Learner ensemble weights by overlap
+                                   severity for the positivity stress test.
+  sim_summary_posviol_sl_positivity.{csv,rds}
+                                   Realized positivity-violation diagnostics by overlap
+                                   severity (true- and estimated-propensity extremes,
+                                   tail mass near 0/1, largest inverse-probability
+                                   weight, TMLE failure rate).
   figures/sim_performance_sl.{pdf,png}
                                    Figure 1 of the manuscript.
+  figures/sim_performance_sl_positivity.{pdf,png}
+                                   Positivity stress-test performance (bias, RMSE,
+                                   SE ratio, 95% coverage) versus overlap severity.
+  figures/sim_instability_vs_violation_sl_positivity.{pdf,png}
+                                   RMSE and 95% coverage versus the realized largest
+                                   inverse-probability weight.
 
 figures/                  Figures used directly in the manuscript .tex.
 
@@ -41,9 +67,10 @@ manuscript/               LaTeX source for the manuscript (with appendix) and
                           its bibliography.
 ```
 
-The large raw per-replicate results files (`output/sim_results.csv` and
-`output/sim_results_sl.csv`) are not committed; they are regenerable by running
-the corresponding scripts under `code/`.
+The large raw per-replicate results files (`output/sim_results.csv`,
+`output/sim_results_sl.csv`, and `output/sim_results_sl_positivity.csv`) are not
+committed; they are regenerable by running the corresponding scripts under
+`code/`.
 
 ## Reproducing the simulation study
 
@@ -65,6 +92,37 @@ The oracle benchmark in `code/simulation_study.R` uses correctly-specified
 parametric nuisances and provides a sanity check that the AIPW, TMLE, and RonR
 implementations recover bias near zero and 95\% coverage when the nuisance
 functional forms are oracle-known.
+
+### Positivity stress test
+
+`code/simulation_study_sl_positivity.R` re-runs the Super Learner comparison as
+overlap (positivity) degrades. The treatment effect is homogeneous (a constant
+`psi` for every unit, with no treatment-by-covariate interaction), so the
+population ATE is exactly `psi` no matter how poor the overlap. A single
+overlap-severity dial `zeta` then steepens the propensity score and pushes
+`pi(C)` toward the 0/1 boundaries; `zeta = 1` reproduces the healthy overlap of
+the main simulation. Because the estimand never changes, AIPW, TMLE, and RonR
+all still target the same `psi`, so any divergence in their finite-sample
+behaviour as `zeta` grows reflects instability rather than a change of estimand.
+The propensity-truncation bound is also loosened (`pi_trunc = 0.001`, versus
+`0.01` in the main simulation) so that this instability is not masked by
+aggressive clipping.
+
+```r
+source("code/simulation_study_sl_positivity.R")
+```
+
+The grid sweeps `zeta` over {1, 2, 3, 4, 6} at fixed `psi = 0.5` and
+`sigma_Y = 1`, again with 10,000 replicates per scenario drawn from the same
+seed bank. Each replicate also records the realized degree of positivity
+violation it drew -- true- and estimated-propensity extremes, the tail mass near
+0/1, the largest inverse-probability weight, and a TMLE-failure flag -- so the
+resulting instability can be read against an interpretable overlap metric rather
+than the abstract dial. Summaries go to
+`output/sim_summary_*_sl_positivity.{csv,rds}` (performance, ensemble weights,
+and positivity diagnostics) and two figures to `output/figures/`. With five
+overlap scenarios rather than the main study's fifteen (psi x sigma_Y) cells,
+wall-clock cost is roughly a third of the main simulation.
 
 Complete implementation details (data-generating mechanism, nuisance library,
 cross-fitting scheme, estimator definitions) are also written out in the
