@@ -29,6 +29,9 @@ manuscript/2026_02_03_ResidualOnResidual_QJ.docx
 manuscript/2026_02_03_ResidualOnResidual_QJ_bw.docx
 manuscript/2026_05_26_ResidualOnResidual.docx
 *.pdf
+*.png
+*.csv
+*.rds
 
 # Excluded from the public archive (kept locally)
 code/create_figure.py
